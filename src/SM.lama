@@ -532,23 +532,23 @@ public fun compileSM(stmt) {
         [endLabUsed, env, mainCode] ->
           fun compileFuns(env, fs) {
             case fs of
-                { }                      -> emptyBuffer()
+                { }                      ->
+                  case getFuns(env) of
+                      [{ }, env] -> emptyBuffer()
+                    | [fs, env]  -> compileFuns(env, fs)
+                  esac
               | Fun(fLab, as, b, s) : fs ->
-                case genLabel(addArgs(beginFun(env, s), as)) of
-                  [endLab, env] ->
-                    case compile(endLab, env, b) of
-                      [endLabUsed, env, bCode] ->
-                        singletonBuffer(LABEL(fLab)) <+ BEGIN(fLab, size(as), getLocals(env)) <+> bCode <+> label(endLab, endLabUsed) <+ END <+> compileFuns(env, fs)
-                    esac
-                esac
+                  case genLabel(addArgs(beginFun(env, s), as)) of
+                    [endLab, env] ->
+                      case compile(endLab, env, b) of
+                        [endLabUsed, env, bCode] ->
+                          singletonBuffer(LABEL(fLab)) <+ BEGIN(fLab, size(as), getLocals(env)) <+> bCode <+> label(endLab, endLabUsed) <+ END <+> compileFuns(env, fs)
+                      esac
+                  esac
             esac
           }
 
-          getBuffer $
-            case getFuns(env) of
-              [fs, env] ->
-                singletonBuffer(LABEL("main")) <+ BEGIN("main", 0, getLocals(env)) <+> mainCode <+> label(endLab, endLabUsed) <+ END <+> compileFuns(env, fs)
-            esac
+          getBuffer $ (singletonBuffer(LABEL("main")) <+ BEGIN("main", 0, getLocals(env)) <+> mainCode <+> label(endLab, endLabUsed) <+ END <+> compileFuns(env, {}))
       esac
   esac
 }
